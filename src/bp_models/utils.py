@@ -27,27 +27,6 @@ def pad_sequences(
     Pre-padding or removing values from the beginning of the sequence is the
     default.
 
-    >>> sequence = [[1], [2, 3], [4, 5, 6]]
-    >>> tf.keras.utils.pad_sequences(sequence)
-    array([[0, 0, 1],
-           [0, 2, 3],
-           [4, 5, 6]], dtype=int32)
-
-    >>> tf.keras.utils.pad_sequences(sequence, value=-1)
-    array([[-1, -1,  1],
-           [-1,  2,  3],
-           [ 4,  5,  6]], dtype=int32)
-
-    >>> tf.keras.utils.pad_sequences(sequence, padding='post')
-    array([[1, 0, 0],
-           [2, 3, 0],
-           [4, 5, 6]], dtype=int32)
-
-    >>> tf.keras.utils.pad_sequences(sequence, maxlen=2)
-    array([[0, 1],
-           [2, 3],
-           [5, 6]], dtype=int32)
-
     Args:
         sequences: List of sequences (each sequence is a list of integers).
         maxlen: Optional Int, maximum length of all sequences. If not provided,
