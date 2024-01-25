@@ -37,5 +37,5 @@ def direct_gillespie(N, beta, mu, seed=None):
         
         t.append(t[-1] + wait_time)
     
-    return t, I, S[-1]
+    return t, I, R[-1]
           
