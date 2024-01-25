@@ -1,6 +1,10 @@
-import numpy as np
+import math
+import random
+import numba
 
-def direct_gillespie(N, beta, mu, seed=None):
+
+@numba.njit(parallel=False)
+def direct_gillespie(N, beta, mu):
     """_summary_
 
     Parameters
@@ -12,7 +16,6 @@ def direct_gillespie(N, beta, mu, seed=None):
     mu : float
         Rate of recovery
     """
-    rng = np.random.default_rng(seed)
     
     t = [0]  # initial time
     I = [1]  # initially one person is infected
@@ -24,9 +27,9 @@ def direct_gillespie(N, beta, mu, seed=None):
         removal_rate = mu*I[-1]
         rate_sum = infection_rate + removal_rate
           
-        wait_time = -np.log(rng.uniform())/rate_sum
+        wait_time = -math.log(random.random())/rate_sum
           
-        if rng.uniform() < infection_rate/rate_sum:  # infection
+        if random.random() < infection_rate/rate_sum:  # infection
             S.append(S[-1] - 1)
             I.append(I[-1] + 1)
             R.append(R[-1])
