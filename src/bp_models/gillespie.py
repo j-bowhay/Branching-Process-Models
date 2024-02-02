@@ -1,5 +1,7 @@
 import math
 import random
+
+from tqdm import tqdm
 import numba
 
 
@@ -41,4 +43,22 @@ def direct_gillespie(N, beta, mu):
         t.append(t[-1] + wait_time)
     
     return t, I, R[-1]
-          
+
+
+def run_ensemble(N, beta, mu, number_of_sims):
+    ts = []
+    Is = []
+    R_finals = []
+    max_t = 0
+
+    for _ in tqdm(range(number_of_sims)):
+        t, I, R_final = direct_gillespie(N, beta, mu)
+        
+        ts.append(t)
+        Is.append(I)
+        R_finals.append(R_final)
+        
+        if t[-1] > max_t:
+            max_t = t[-1]
+    
+    return ts, Is, R_finals, max_t
