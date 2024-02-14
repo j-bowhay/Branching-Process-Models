@@ -119,3 +119,73 @@ def run_ensemble_sir_partial_immunity(N, beta, k1, k2, number_of_sims):
             max_t = t[-1]
     
     return ts, Is, np.asarray(infections), max_t
+
+
+@numba.njit(parallel=False)
+def direct_gillespie_sir_vaccine(N, N_V, beta, mu, alpha):
+    t = [0]  # initial time
+    S = [N - 1]  # initially all but one is susceptible
+    I = [1]  # initially one person is infected
+    R = [0]  # initially nobody is recovered
+    S_V = [N_V]
+    I_V = [0]
+    R_V = [0]
+    
+    while I[-1] + I_V[-1] > 0:
+        infection_nonvaccinated_rate = beta*(I[-1]+I_V[-1])*S[-1]
+        removal_nonvaccinated_rate = mu*I[-1]
+
+        infection_vaccinated_rate = beta*(1-alpha)*(I[-1]+I_V[-1])*S_V[-1]
+        removal_vaccinated_rate = mu*I_V[-1]
+
+        rate_sum = (infection_vaccinated_rate + removal_vaccinated_rate
+                    + infection_nonvaccinated_rate + removal_nonvaccinated_rate)
+          
+        wait_time = -math.log(random.random())/rate_sum
+        
+        choice = random.random()
+        
+        if choice < infection_nonvaccinated_rate/rate_sum:  # infection of non_vaccinated
+            S.append(S[-1] - 1)
+            I.append(I[-1] + 1)
+            R.append(R[-1])
+            S_V.append(S_V[-1])
+            I_V.append(I_V[-1])
+            R_V.append(R_V[-1])
+        elif choice < (infection_nonvaccinated_rate + removal_nonvaccinated_rate)/rate_sum:  # removal of non_vaccinated
+            S.append(S[-1])
+            I.append(I[-1] - 1)
+            R.append(R[-1] + 1)
+            S_V.append(S_V[-1])
+            I_V.append(I_V[-1])
+            R_V.append(R_V[-1])
+        elif choice < (infection_nonvaccinated_rate + removal_nonvaccinated_rate
+                       + infection_vaccinated_rate)/rate_sum:  # infection a vaccinated
+            S.append(S[-1])
+            I.append(I[-1])
+            R.append(R[-1])
+            S_V.append(S_V[-1] - 1)
+            I_V.append(I_V[-1] + 1)
+            R_V.append(R_V[-1])
+        else:  # removal of vaccinated
+            S.append(S[-1])
+            I.append(I[-1])
+            R.append(R[-1])
+            S_V.append(S_V[-1])
+            I_V.append(I_V[-1] - 1)
+            R_V.append(R_V[-1] + 1)
+        
+        t.append(t[-1] + wait_time)
+    
+    return t, I, I_V, R[-1]+R_V[-1]
+
+
+def run_ensemble_sir_vaccine(N, N_V, beta, mu, alpha, number_of_sims):
+    infected = []
+
+    for _ in tqdm(range(number_of_sims)):
+        _, _, _, i = direct_gillespie_sir_vaccine(N, N_V, beta, mu, alpha)
+        
+        infected.append(i)
+    
+    return infected
