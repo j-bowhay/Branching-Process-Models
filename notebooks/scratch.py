@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 from tqdm import tqdm
+import numba
 
+@numba.njit()
 def beta(t, beta_0, beta_1, phi):
     return beta_0 + beta_1*np.cos(np.pi*t/6 + phi)
 
@@ -39,7 +41,7 @@ from bp_models.gillespie import direct_gillespie_sir_time_varying_beta
 t0_sim = np.linspace(0, 24, 10)
 
 simulated = []
-num_sims = 1
+num_sims = 10
 
 for t0 in tqdm(t0_sim):
     major_outbreaks = 0
@@ -47,11 +49,12 @@ for t0 in tqdm(t0_sim):
         _, _, infected = direct_gillespie_sir_time_varying_beta(t0, N, lambda t: beta(t, beta_0, beta_1, phi), mu)
         if infected > 0.2*N:
             major_outbreaks += 1
-    simulated.append(major_outbreaks)
+    simulated.append(major_outbreaks/num_sims)
 
 fig, ax = plt.subplots()
 ax.plot(t, IER(t, beta_0, beta_1, phi, mu), label="IER")
 ax.plot(t, CER(t, beta_0, beta_1, phi, mu), label="CER")
 ax.plot(t0_sim, simulated, '.')
 ax.legend()
+plt.savefig("hopeful.pdf")
 plt.show()

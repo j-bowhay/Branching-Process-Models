@@ -208,10 +208,10 @@ def direct_gillespie_sir_time_varying_beta(t0,N, beta, mu):
             return beta(s)*S[-1]*I[-1]/N + mu*I[-1]
         
         def _root(tau):
-            scipy.integrate.quad(_intergrand, t[-1], t[-1] + tau)[0] + np.log(r1)
+            return scipy.integrate.quad(_intergrand, t[-1], t[-1] + tau)[0] + np.log(r1)
             
-        sol = scipy.optimize.root(_root, x0=wait_time)
-        wait_time = sol.x.squeeze()
+        sol = scipy.optimize.root_scalar(_root, x0=wait_time)
+        wait_time = sol.root
         
         infection_rate = beta(t[-1] + wait_time)*I[-1]*S[-1]/N
         removal_rate = mu*I[-1]
