@@ -4,6 +4,7 @@ import random
 from tqdm import tqdm
 import numba
 import numpy as np
+import scipy.integrate
 
 
 @numba.njit(parallel=False)
@@ -189,3 +190,42 @@ def run_ensemble_sir_vaccine(N, N_V, beta, mu, alpha, number_of_sims):
         infected.append(i)
     
     return infected
+
+
+def direct_gillespie_sir_time_varying_beta(t0,N, beta, mu):
+    t = [t0]  # initial time
+    I = [1]  # initially one person is infected
+    S = [N - 1]  # initially all but one is susceptible
+    R = [0]  # initially nobody is recovered
+    
+    wait_time = 1
+    
+    while I[-1] > 0:
+          
+        r1 = random.random()
+        
+        def _intergrand(s):
+            return beta(s)*S[-1]*I[-1]/N + mu*I[-1]
+        
+        def _root(tau):
+            scipy.integrate.quad(_intergrand, t[-1], t[-1] + tau)[0] + np.log(r1)
+            
+        sol = scipy.optimize.root(_root, x0=wait_time)
+        wait_time = sol.x.squeeze()
+        
+        infection_rate = beta(t[-1] + wait_time)*I[-1]*S[-1]/N
+        removal_rate = mu*I[-1]
+        rate_sum = infection_rate + removal_rate
+          
+        if random.random() < infection_rate/rate_sum:  # infection
+            S.append(S[-1] - 1)
+            I.append(I[-1] + 1)
+            R.append(R[-1])
+        else:  # removal
+            S.append(S[-1])
+            I.append(I[-1] - 1)
+            R.append(R[-1] + 1)
+        
+        t.append(t[-1] + wait_time)
+    
+    return t, I, R[-1]
