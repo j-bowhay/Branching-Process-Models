@@ -41,7 +41,7 @@ from bp_models.gillespie import direct_gillespie_sir_time_varying_beta
 t0_sim = np.linspace(0, 24, 10)
 
 simulated = []
-num_sims = 10
+num_sims = 20
 
 for t0 in tqdm(t0_sim):
     major_outbreaks = 0

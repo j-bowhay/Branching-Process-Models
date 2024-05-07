@@ -5,6 +5,9 @@ from tqdm import tqdm
 import numba
 import numpy as np
 import scipy.integrate
+from numba import cfunc
+from numba.types import intc, CPointer, float64
+from scipy import LowLevelCallable
 
 
 @numba.njit(parallel=False)
@@ -182,14 +185,35 @@ def direct_gillespie_sir_vaccine(N, N_V, beta, mu, alpha):
 
 
 def run_ensemble_sir_vaccine(N, N_V, beta, mu, alpha, number_of_sims):
-    infected = []
+    ts = []
+    Is = []
+    infections = []
+    max_t = 0
 
     for _ in tqdm(range(number_of_sims)):
-        _, _, _, i = direct_gillespie_sir_vaccine(N, N_V, beta, mu, alpha)
+        t, I, I_V, infected = direct_gillespie_sir_vaccine(N, N_V, beta, mu, alpha)
+        I = np.asarray(I)
+        I_V = np.asarray(I_V)
+
+        ts.append(t)
+        Is.append(I + I_V)
+        infections.append(infected)
         
-        infected.append(i)
+        
+        if t[-1] > max_t:
+            max_t = t[-1]
     
-    return infected
+    return ts, Is, np.asarray(infections), max_t
+
+
+def jit_integrand_function(integrand_function):
+    jitted_function = numba.jit(integrand_function, nopython=True)
+    
+    @cfunc(float64(intc, CPointer(float64)))
+    def wrapped(n, xx):
+        values = numba.carray(xx, n)
+        return jitted_function(values)
+    return LowLevelCallable(wrapped.ctypes)
 
 
 def direct_gillespie_sir_time_varying_beta(t0,N, beta, mu):
